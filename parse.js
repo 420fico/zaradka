@@ -47,7 +47,10 @@ const categories = [
           return elements.map(el => {
             const title = el.getAttribute('title') || '';
             const link = 'https://120w.ru' + (el.getAttribute('href') || '');
-            const bg = el.style.backgroundImage || '';
+
+            const computedStyle = window.getComputedStyle(el);
+            const bg = computedStyle.backgroundImage || '';
+
             const image = bg.match(/url\(['"]?(.*?)['"]?\)/)?.[1] || '';
             return {
               title,
@@ -65,7 +68,6 @@ const categories = [
             await productPage.goto(item.link, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await productPage.waitForSelector('#propTableFull', { timeout: 10000 });
 
-            // 🔥 ВСТАВЛЯЕМ ТУТ ПАРСИНГ СПЕЦИФИКАЦИЙ + ЦЕНЫ
             const { specs, price } = await productPage.evaluate(() => {
               const specTable = document.querySelector('#propTableFull');
               const specs = {};
@@ -90,7 +92,7 @@ const categories = [
             });
 
             item.specs = specs;
-            item.price = price; // <-- сохраняем цену в item
+            item.price = price;
             await productPage.close();
           } catch (err) {
             console.error(`  ⚠️ Ошибка при сборе характеристик для ${item.title}: ${err.message}`);
