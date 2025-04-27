@@ -18,14 +18,12 @@ const categories = [
   { name: "Sony", file: "sony_chargers.json", logo: "/brands/sony.png" },
   { name: "Toshiba", file: "toshiba_chargers.json", logo: "/brands/toshiba.png" },
 ];
-
 interface Product {
   title: string;
   price: string;
   image: string;
   specs?: { [key: string]: string };
 }
-
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -35,8 +33,7 @@ export default function Home() {
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
+const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   useEffect(() => {
     async function fetchProducts() {
       if (!selectedCategory) return;
@@ -45,15 +42,15 @@ export default function Home() {
       if (selected) {
         const res = await fetch(`/data/${selected.file}`);
         const data = await res.json();
+        // Увеличиваем цену на 40%
+const updatedData = data.map((item: any) => ({
+  ...item,
+  price: item.price
+    ? `${Math.round(parseFloat(item.price.replace(/[^\d.]/g, "")) * 1.4)} ₽`
+    : item.price,
+}));
+setProducts(updatedData);
 
-        const updatedData = data.map((item: Product) => ({
-          ...item,
-          price: item.price
-            ? `${Math.round(parseFloat(item.price.replace(/[^\d.]/g, "")) * 1.4)} ₽`
-            : item.price,
-        }));
-
-        setProducts(updatedData);
       }
     }
 
@@ -64,30 +61,25 @@ export default function Home() {
     e.preventDefault();
     setIsModalOpen(false);
     setIsSending(true);
-
-    const TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN!;
-    const CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID!;
-    const text = `
-Новая заявка 🚀
-Имя: ${name}
-Контакт: ${contact}
-Сообщение: ${message}
-    `;
-
+  
     try {
-      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      const res = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text,
-        }),
+        body: JSON.stringify({ name, contact, message }),
       });
-      setName("");
-      setContact("");
-      setMessage("");
-      setSelectedProduct(null);
-      setSuccess(true);
+  
+      const data = await res.json();
+  
+      if (data.success) {
+        setName("");
+        setContact("");
+        setMessage("");
+        setSelectedProduct(null);
+        setSuccess(true);
+      } else {
+        throw new Error(data.error || "Неизвестная ошибка");
+      }
     } catch (error) {
       console.error("Ошибка отправки:", error);
     } finally {
@@ -101,11 +93,12 @@ export default function Home() {
     setSelectedProduct(null);
   };
 
-  const handleOrder = (item: Product) => {
+  const handleOrder = (item: any) => {
     setSelectedProduct(item);
     setMessage(`Хочу заказать: ${item.title}`);
     setIsModalOpen(true);
   };
+  
 
   return (
     <>
@@ -135,7 +128,7 @@ export default function Home() {
         {/* Товары */}
         {selectedCategory && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {products.map((item, index) => {
+           {products.map((item, index) => {
               const isOriginal = item.specs && Object.values(item.specs).some(value =>
                 typeof value === "string" && value.toLowerCase().includes("оригинал")
               );
@@ -188,6 +181,7 @@ export default function Home() {
                 </div>
               );
             })}
+    
           </div>
         )}
 
@@ -201,6 +195,7 @@ export default function Home() {
             </div>
           )}
 
+          {/* Если выбран товар — показываем краткое описание */}
           {selectedProduct && (
             <div className="mb-6 flex items-center gap-4 bg-gray-700 p-4 rounded-xl">
               <Image
@@ -264,91 +259,94 @@ export default function Home() {
             </button>
           </form>
         </section>
-
-        {/* Модалка */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-8 rounded-2xl shadow-lg max-w-md w-full relative">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 text-white hover:text-red-400 text-2xl"
-              >
-                ×
-              </button>
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-gray-800 p-8 rounded-2xl shadow-lg max-w-md w-full relative">
+      
+      {/* Кнопка закрытия */}
+      <button
+        onClick={() => setIsModalOpen(false)}
+        className="absolute top-4 right-4 text-white hover:text-red-400 text-2xl"
+      >
+        ×
+      </button>
 
-              <h2 className="text-3xl font-bold mb-6 text-center">Оставить заявку</h2>
+      {/* Заголовок */}
+      <h2 className="text-3xl font-bold mb-6 text-center">Оставить заявку</h2>
 
-              {selectedProduct && (
-                <div className="mb-6 flex items-center gap-4 bg-gray-700 p-4 rounded-xl">
-                  <Image
-                    src={selectedProduct.image}
-                    alt={selectedProduct.title}
-                    width={80}
-                    height={80}
-                    className="rounded-xl object-cover"
-                  />
-                  <div>
-                    <div className="font-bold">{selectedProduct.title}</div>
-                    {selectedProduct.price && (
-                      <div className="text-blue-400 font-semibold mt-1">{selectedProduct.price}</div>
-                    )}
-                  </div>
-                </div>
-              )}
+      {/* Выбранный товар */}
+      {selectedProduct && (
+        <div className="mb-6 flex items-center gap-4 bg-gray-700 p-4 rounded-xl">
+          <Image
+            src={selectedProduct.image}
+            alt={selectedProduct.title}
+            width={80}
+            height={80}
+            className="rounded-xl object-cover"
+          />
+          <div>
+            <div className="font-bold">{selectedProduct.title}</div>
+            {selectedProduct.price && (
+              <div className="text-blue-400 font-semibold mt-1">{selectedProduct.price}</div>
+            )}
+          </div>
+        </div>
+      )}
 
-              <form onSubmit={sendForm} className="space-y-6">
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Ваше имя</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Введите имя"
-                    required
-                  />
-                </div>
+      {/* Форма */}
+      <form onSubmit={sendForm} className="space-y-6">
+        <div>
+          <label className="block mb-2 text-sm font-medium">Ваше имя</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Введите имя"
+            required
+          />
+        </div>
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Телефон или email</label>
-                  <input
-                    type="text"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ваш телефон или почта"
-                    required
-                  />
-                </div>
+        <div>
+          <label className="block mb-2 text-sm font-medium">Телефон или email</label>
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ваш телефон или почта"
+            required
+          />
+        </div>
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Комментарий</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={4}
-                    placeholder="Введите сообщение"
-                  ></textarea>
-                </div>
+        <div>
+          <label className="block mb-2 text-sm font-medium">Комментарий</label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={4}
+            placeholder="Введите сообщение"
+          ></textarea>
+        </div>
 
-                <button
-                  type="submit"
-                  disabled={isSending}
-                  className="w-full bg-blue-600 hover:bg-blue-700 transition p-3 rounded-lg font-bold text-white disabled:bg-gray-600"
-                >
-                  {isSending ? "Отправка..." : "Отправить заявку"}
-                </button>
+        <button
+          type="submit"
+          disabled={isSending}
+          className="w-full bg-blue-600 hover:bg-blue-700 transition p-3 rounded-lg font-bold text-white disabled:bg-gray-600"
+        >
+          {isSending ? "Отправка..." : "Отправить заявку"}
+        </button>
 
-                {success && (
-                  <div className="mt-4 text-green-400 font-semibold text-center">
-                    ✅ Заявка успешно отправлена!
-                  </div>
-                )}
-              </form>
-            </div>
+        {success && (
+          <div className="mt-4 text-green-400 font-semibold text-center">
+            ✅ Заявка успешно отправлена!
           </div>
         )}
+      </form>
+    </div>
+  </div>
+)}
       </main>
     </>
   );
