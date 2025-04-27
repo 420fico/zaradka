@@ -1,11 +1,10 @@
-// app/api/send/route.ts
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { name, contact, message } = await req.json();
 
-  const TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN!;
-  const CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID!;
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+  const CHAT_ID = process.env.TELEGRAM_CHAT_ID!;
   
   const text = `
 Новая заявка 🚀
