@@ -3,17 +3,18 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function Header() {
-  const router = useRouter();
+type HeaderProps = {
+  onHomeClick: () => void;
+};
 
+export default function Header({ onHomeClick }: HeaderProps) {
   return (
     <header className="bg-gray-800 text-white shadow-md py-4 px-8 flex items-center justify-between flex-wrap">
       {/* Логотип + название */}
       <div
-        onClick={() => router.push("/")}
+        onClick={onHomeClick}
         className="flex items-center cursor-pointer space-x-3"
       >
-   
         <span className="text-2xl font-bold">
           Charger<span className="text-blue-400">Store</span>
         </span>
