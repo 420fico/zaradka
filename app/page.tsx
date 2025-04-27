@@ -18,18 +18,22 @@ const categories = [
   { name: "Sony", file: "sony_chargers.json", logo: "/brands/sony.png" },
   { name: "Toshiba", file: "toshiba_chargers.json", logo: "/brands/toshiba.png" },
 ];
-
+interface Product {
+  title: string;
+  price: string;
+  image: string;
+  specs?: { [key: string]: string };
+}
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null); // выбранный товар
-
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   useEffect(() => {
     async function fetchProducts() {
       if (!selectedCategory) return;
